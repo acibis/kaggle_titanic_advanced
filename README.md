@@ -361,7 +361,7 @@ Musimy więc przekształcić nasz słownik:
 cabins_dict = dict(df.groupby(['Pclass', 'Embarked', 'Cabin'])['Fare'].mean())
 
 
-# nowy słownik gdzie klucz: Klasa, Potr, Cena, a wartość: Kabina
+# nowy słownik gdzie klucz: Klasa, Port, Cena, a wartość: Kabina
 formatted_cabins_dict = dict()
 
 for k,v in cabins_dict.items():
