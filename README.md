@@ -380,7 +380,7 @@ for k,v in formatted_cabins_dict.items():
 Uzupełniamy brakujące dane:
 
 ```
-# najpierw 2 funkcje, które pomogą dopasować Fare do odpowiedniego klucza
+# 2 funkcje, które pomogą dopasować Fare do odpowiedniego klucza
 
 def find_closest(alls, ele):
     
@@ -393,23 +393,56 @@ def find_closest(alls, ele):
             
     return(a)    
 
-def find_fare(pclass, embarked, fare):
+def find_fare(cabin, pclass, embarked, fare):
     
-    all_fares = []
-    for k,v in ready_cabins.items():
-        if k[0] == pclass and k[1] == embarked:
-            all_fares.append(k[2])
-            
-    if len(all_fares) > 0:
-        found_fare = find_closest(all_fares, fare)
-        return(ready_cabins[(pclass, embarked, found_fare)])
+    if cabin == 'U':
+        all_fares = []
+        for k,v in ready_cabins.items():
+            if k[0] == pclass and k[1] == embarked:
+                all_fares.append(k[2])
+
+        if len(all_fares) > 0:
+            found_fare = find_closest(all_fares, fare)
+            return(ready_cabins[(pclass, embarked, found_fare)])
     else:
-        return('U')      
+        return(cabin)
 ```
 
 ```
 # nowa kolumna na uzupełnione wartości
 df['Cabin_combined'] = df['Cabin'].copy()
-df['Cabin_combined'] = df.apply(lambda x: find_cabin(x.Cabin_combined, x.Pclass, x.Embarked, x.Fare), axis=1)
+df['Cabin_combined']  = df.apply(lambda x: find_fare(x.Cabin, x.Pclass, x.Embarked, x.Fare), axis=1)
 ```
+Po przepuszczeniu kodu pojawiły się 2 braki w kolumnie Cabin_combined
+```
+df['Cabin_combined'].isnull().sum()
+# załatwmy to ręcznie
+df.loc[df['Cabin_combined'].isnull(), 'Cabin_combined'] = 'U'
+```
+
+#### 2.3.3 Brakujący port
+At least! Ostatni (w zbiorze treningowym) brakujący element to informacja o porcie zaokrętowania dla dwóch facetek:
+![image](https://user-images.githubusercontent.com/13216011/150139222-307e058d-dc36-4228-84e9-bb85a634cd8c.png)
+
+To tylko 2 wiersze,sSkorzystajmy więc po prostu z potęgi internetu, wpiszmy w wyszukiwarkę imię i nazwisko pasażerki:
+  
+  >Miss Rose Amélie Icard, 38, was born in Vaucluse, France on 31 October 1872, her father Marc Icard lived at Mafs á Murs (?).
+She boarded the Titanic at Southampton as maid to Mrs George Nelson Stone. She travelled on Mrs Stone's ticket (#113572).
+  
+  Problem rozwiązany, dorzucamy 'S' w brakujące miejsca:
+  ```
+  df.loc[df['Embarked'].isnull(), 'Embarked'] = 'S'
+  ```
+  
+### 2.4 ANALIZA!
+
+Wow, w końcu, czas na analizę danych! Często wykresy mówią więcej niż obliczenia (przypomnijcie sobie badanie brakujących danych sprzed 10 minut), zwizualizujmy więc nasze dane z uwzględnieniem kolumny, która najbardziej nas interesuje, czyli Survived. Kod użyty do wykonania wykresów jest w notebooku, tutaj wrzucam tylko rezultat.
+
+![image](https://user-images.githubusercontent.com/13216011/150317660-53cc038d-24b4-44bf-985f-9e3f1972e9a5.png)
+
+![image](https://user-images.githubusercontent.com/13216011/150324050-980cf671-798c-49d7-a8cf-fe0460f63228.png)
+
+![image](https://user-images.githubusercontent.com/13216011/150329129-fdc5fffc-0202-4618-9475-ab818daefa33.png)
+
+
 
