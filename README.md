@@ -30,11 +30,18 @@ W mojej [podstawowej wersji](https://github.com/acibis/kaggle_titanic_basic) ana
  
   ### 2.1 Wczytać dane i rzucić na nie okiem.
   
+  Notatka na przyszłość - zawsze lepiej jest mieć więcej danych, niż mniej. Dlatego połączymy zbiór treningowy z testowym. Najpierw wykonałam analizę na samym zbiorze treningowym i wyniki nie były satysfakcjonujące, więc nie popełniajcie mojego błędu i nie marnujcie czasu.
+  
   ```
-# import danych
-df = pd.read_csv("./train.csv")
-# przykładowe 3 wiersze
-data.sample(3)
+#import danych treningowych
+df_train = pd.read_csv("./train.csv")
+
+#import danych testowych
+df_test = pd.read_csv("./test.csv")
+
+# połączenie zbiorów
+df = df_train.append(df_test, ignore_index=True, sort=True)
+df.head()
  ```
 ![image](https://user-images.githubusercontent.com/13216011/148648536-4fc0ac60-2971-4f25-94ef-4db089740aef.png)
 
@@ -64,7 +71,7 @@ Dobrze jest mieć szerszy wgląd w sytuację i dane, które analizujemy. Tutaj w
   df.isnull().sum()
   ```
   
-   ![image](https://user-images.githubusercontent.com/13216011/148649032-b081e9d1-d8f2-44d8-9109-75064b0aa64c.png)
+![image](https://user-images.githubusercontent.com/13216011/151865508-93ab4e7b-235c-4ce3-8ebf-3a5081b96649.png)
 
  ##### 2.3.1 Brakujący wiek.
  
@@ -82,7 +89,7 @@ labels = ['0-16','15-20', '20s', '30s', '40s', '50s', '60s', '70s', '80s']
 df['Age_label'] = pd.cut(df['Age'], bins=bins, labels=labels, right=False, ordered=True)
 df['Age_label'].value_counts().sort_index()
 ```
-![image](https://user-images.githubusercontent.com/13216011/150015296-7cd6dd88-c932-4ced-bfbc-b9b41c793f14.png)
+![image](https://user-images.githubusercontent.com/13216011/151865702-939eb59f-6437-4418-9880-4aa0bc8d6152.png)
 
 Najwięcej mamy 20stek (24%), potem 30stek(19%), dzieci (poniżej 16 roku życia) stanowią 9%. Chcielibyśmy, żeby nasze uzupełnienia przedstawiały się w miarę podobnie.
 
