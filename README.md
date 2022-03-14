@@ -70,8 +70,7 @@ Dobrze jest mieć szerszy wgląd w sytuację i dane, które analizujemy. Tutaj w
   # brakujące wartości
   df.isnull().sum()
   ```
-  
-![image](https://user-images.githubusercontent.com/13216011/151865508-93ab4e7b-235c-4ce3-8ebf-3a5081b96649.png)
+  ![image](https://user-images.githubusercontent.com/13216011/158076051-09be5c61-8a0b-4faf-854b-636b6802e385.png)
 
  ##### 2.3.1 Brakujący wiek.
  
@@ -131,28 +130,52 @@ df['title'] = df['Name'].map(lambda x: x.split(',')[1].split('.')[0].strip())
 df['title'].unique()
 
 # znaleźliśmy tytuły:
-# Mr - mężczyzna
-# Mrs - kobieta meżatka
-# Miss - kobieta niezamężna
+# Mr - mężczyźni
+# Mrs - kobiety meżatki
+# Miss - kobiety niezamężne
 # Master - chłopiec
-# Don -  tytuł grzecznościowy używany w Hiszpani
+# Don - hiszpasńki tytuł arystokratyczny
+# Dona - hiszpasńki tytuł arystokratyczny
 # Rev - pastor
-# Dr - doktor
-# Mme - madame, kobieta zamężna
+# Dr - Doktor
+# Mme - Madame, kobieta zamężna
 # Ms - miss, kobieta niezamężna
 # Major - mężczyzna, stopień wojskowy
 # Lady - kobieta, tytuł szlachecki
 # Sir - mężczyzna, tytuł szlachecki
-# Mlle - mademoiselle, kobieta niezamężna
+# Mlle - Mademoiselle, kobieta niezamężna
 # Col - mężczyzna, stopień wojskowy
 # Capt- mężczyzna, stopień wojskowy
 # the Countess - kobieta, tytuł szlachecki
 # Jonkheer - nazwisko, błąd w cięciu stringa
 
-# sprowadźmy wszystkie panie i panny do wspólnego mianownika
-df.loc[df.title == 'Mlle', 'title'] = 'Miss'
-df.loc[df.title == 'Mme', 'title'] = 'Mrs'
-df.loc[df.title == 'Ms', 'title'] = 'Miss'
+# sprowadźmy wszystkie panie i panny do wspólnego mianownika, wrzućmy żołnierzy do jednego worka, tak samo arystokrację
+# i Johnkeera (również arystokarata, sprawdźcie wiki)
+
+Title_Dictionary = {
+    "Capt": "Officer",
+    "Col": "Officer",
+    "Major": "Officer",
+    "Jonkheer": "Royalty",
+    "Don": "Royalty",
+    "Dona": "Royalty",
+    "Sir" : "Royalty",
+    "Dr": "Officer",
+    "Rev": "Officer",
+    "the Countess":"Royalty",
+    "Mme": "Mrs",
+    "Mlle": "Miss",
+    "Ms": "Mrs",
+    "Mr" : "Mr",
+    "Mrs" : "Mrs",
+    "Miss" : "Miss",
+    "Master" : "Master",
+    "Lady" : "Royalty"
+}
+
+
+df['Title'] = df['Title'].map(Title_Dictionary)
+df['Title'].unique()
 
 # a następnie policzmy dla nich średnią wieku:
 titles = df['title'].unique()
@@ -162,122 +185,38 @@ for title in titles:
     means[title] = round(mean)
     
 means
-#  'Mr': 32,
-#  'Mrs': 36,
-#  'Miss': 22,
-#  'Master': 5,
-#  'Don': 40,
-#  'Rev': 43,
-#  'Dr': 42,
-#  'Major': 48,
-#  'Lady': 48,
-#  'Sir': 49,
-#  'Col': 58,
-#  'Capt': 70,
-#  'the Countess': 33,
-#  'Jonkheer': 38
-```
-
-Jeżeli zaglądniemy do naszych brakujących danych i sprawdzimy, jakie tytuły mają osoby, które nie posiadają informacji o wieku, to dowiemy się, że są to:
-```
-nulls = df[df['Age'].isnull()].copy()
-nulls.groupby('title')['Name'].count()
-# Dr          1
-# Master      4
-# Miss       36
-# Mr        119
-# Mrs        17
-```
-
-Brakuje nam wieku jednego doktora, 4 chłopców, i tak dalej. Kiedy będziemy chcieli uzupełnić brakujący wiek na podstawie tytułu osoby:
-```
-nulls = df[df['Age'].isnull()].copy()
-for index,row in nulls.iterrows():
-    nulls.loc[index, 'Age'] = means[row['title']]
-bins= [0, 16, 20, 30, 40, 50, 60, 70, 80, 90]
-labels = ['0-16','16-20', '20s', '30s', '40s', '50s', '60s', '70s', '80s']
-pd.cut(nulls['Age'], bins=bins, labels=labels, right=False, ordered=True).value_counts().sort_index()
-
-# 0-16       4
-# 16-20      0
-# 20s       36
-# 30s      136
-# 40s        1
-# 50s        0
-# 60s        0
-# 70s        0
-# 80s        0
-```
-Wartości, którymi uzupełniliśmy braki:
-```
-nulls['Age'].unique()
-
-# array([32., 36., 22.,  5., 42.])
-```
-Panie (Mrs) i panowie (Mr) są najliczniejszą grupą, uzupełniliśmy też wiek 4 chłopców. To, czego nam wciąż brakuje, to informacja o dziewczynkach. Ponieważ nie mamy rozróżnienia między dorosłą kobietą a dziewczynką tak, jak między dorosłymi mężczyznami a chłopcami (Mr vs Master), pozostaje nam się pogodzić z tym, że dziewczynki wiekowo pomijamy.
-
-**WERSJA 3** - poszukajmy informacji o wieku w innych kolumnach i połączmy je ze sobą. Oprócz informacji o tytule, mamy też informację o klasie, którą podróżował pasażer:
+{'Mr': 32, 'Mrs': 37, 'Miss': 22, 'Master': 5, 'Royalty': 41, 'Officer': 46}
 
 ```
-g = sns.catplot(y="Age",x="title",hue="Pclass", data=df, kind="bar", size = 8)
-g.fig.set_figwidth(12)
-g.fig.set_figheight(6)
-```
-![image](https://user-images.githubusercontent.com/13216011/150096095-221fa8cb-0cb1-471a-a551-4fbb34e0e2c5.png)
-
-Wiemy, że brakuje nam 1 doktora, 4 chłopców, 17 pań, 36 panien i wielu mężczyzn, zobaczmy więc, jak się przedstawiają liczbowo propozycje mediany wieku dla nich na podstawie klasy:
+Sprawdźmy teraz, jak się ma mediana wieku do tytułów i dorzućmy jeszcze informację o klasie i płci, co zwiększy nam granularność wyników
 
 ```
-df[df['title'].isin(['Mr', 'Mrs', 'Miss', 'Master', 'Dr'])].groupby(["title", "Pclass"])["Age"].median()
+grouped_age_median = df.groupby(['Sex','Pclass','Title'])  \
+                        .median() \
+                        ['Age']
+
+grouped_age_median
 ```
-![image](https://user-images.githubusercontent.com/13216011/150106837-f1e5c5b2-daaf-4a3e-86df-628f90f32c45.png)
+![image](https://user-images.githubusercontent.com/13216011/158077346-f2d931df-cd58-4cb9-b8ab-f336e40d36b5.png)
 
-Wartości, którymi uzupełnilismy braki:
+##### 2.3.2 Brakująca cena biletu
+
+Mamy tylko jeden brak w tej kolumnie, więc uzupełnimy go średnią ceną biletu dla klasy 3ciej:
 ```
-nulls['Age'].unique()
-
-# array([26. , 31. , 18. , 40. ,  4. , 24. , 30. , 46.5])
-```
-Nie wiem który ze sposobów jest najlepszy, więc stworzymy 3 kolumny i będziemy je testować w modelu.
-![image](https://user-images.githubusercontent.com/13216011/150029850-75eff009-06ae-4c47-9e94-72f7c0e0283a.png)
-
-```
-# wiek na podstawie mediany
-df['Age_median'] = df['Age'].copy()
-df.loc[df['Age_median'].isnull(), 'Age_median'] = rand_age
-
-# wiek na podstawie tytułu
-df['Age_title'] = df['Age'].copy()
-df['Age_title'].fillna(-1, inplace=True)
-
-for index, row in df.iterrows():
-    if row['Age_title'] == -1:
-        df.loc[index, 'Age_title'] = title_medians[row['title']]
-
-# wiek na podstawie tytułu i klasy
-df['Age_combined'] = df['Age'].copy()
-combined_medians = df[df['title'].isin(['Mr', 'Mrs', 'Miss', 'Master', 'Dr'])].groupby(["title", "Pclass"])["Age"].median()
-
-for key,value in dict(combined_medians).items():
-    df.loc[(df['Age_combined'].isnull()) & (df['title']==key[0]) & (df['Pclass']==key[1]),'Age_combined'] = value
+df[df['Fare'].isna() == True]
+df.loc[df['Fare'].isnull(), 'Fare'] = df.groupby(['Pclass'])['Fare'].mean()[3]
 ```
 
-Przy okazji zobaczmy, jak różne wyniki w kolumnie wiek jest otrzymaliśmy:
-
-![image](https://user-images.githubusercontent.com/13216011/150111680-db2b561f-6e60-4711-b3c5-e678ce7a38f5.png)
-
-To może sugerować, że jednak wypełnianie wieku medianą przyniesie słabe rezultaty:
-
-![image](https://user-images.githubusercontent.com/13216011/150112890-638f8e5e-9022-4229-9204-c4b9c2e477fc.png)
-
-
-
-Mnie już mózg paruje, więc wrzucam mema na rozluźnienie:
-
-![image](https://user-images.githubusercontent.com/13216011/150030698-7fcb8f76-8cae-4adf-85df-b56c211c31a2.png)
-
- ##### 2.3.2 Brakująca kabina.
+##### 2.3.3 Brakujący port zaokrętowania
  
+Portu brakuje dla 2 osób w związku z tym nie jest to dużo roboty, żeby sprawdzić jak to było w rzeczywistości używając strony https://www.encyclopedia-titanica.org:
+![image](https://user-images.githubusercontent.com/13216011/158078029-a7a1adb1-4d7c-46b8-b558-c54235381c27.png)
+
+```
+df.loc[df['Embarked'].isnull(), 'Embarked'] = 'S'
+```
+ 
+##### 2.3.3 Brakująca kabina
 Możemy zauważyć, że nazwa kabiny składa się z literki i cyfr. Szybki research w internecie podpowie, że litera to oznaczenie podkładu/piętra statku, co jest bardzo istotnym czynnikiem przeżycia, bo z kabin ulokowanych w pewnych miejscach ciężej się przedostać do łodzi ratunkowych. Zerknijcie na schemat:
 
 ![image](https://user-images.githubusercontent.com/13216011/150093384-910a9564-ad88-4acb-939d-f961afb4d180.png)
@@ -303,145 +242,83 @@ df['Cabin'].value_counts()
 # T      1
 ```
 
-Ok, ready? Spróbujemy przewidzieć pokład na podstawie połączonych mocy klasy(Pclass), portu(Embarked) i ceny(Fare). Na początek rzućmy okiem na związek klasy z pokładem:
-```import matplotlib as mpl
-plt.style.use('ggplot')
+### 3. Czyścimy dane i przerabiamy na liczbowe
 
-g = df.groupby('Cabin')['Pclass'].value_counts(normalize=True).unstack()
-g.plot(kind='bar', stacked='True', figsize=(10,4) ).legend(bbox_to_anchor=(1, 0.5), title="Pclass")
-```
-![image](https://user-images.githubusercontent.com/13216011/150032796-24f851a7-396a-430f-bd4b-f4bfee35ff2d.png)
+Najpierw wyczyśmy/przeróbmy te kolumny, który istnieją w naszym zbiorze.
 
-A następnie na związek klasy i ceny biletu z pokładem:
-```
-import seaborn as sns
-g = sns.catplot(y='Fare', x='Cabin', hue='Pclass', data=df.sort_values(by=['Cabin']), kind='bar', height=10, aspect=2)
-g.fig.set_figwidth(12)
-g.fig.set_figheight(4)
-```
-
-![image](https://user-images.githubusercontent.com/13216011/150113391-53e33d7b-59e1-4333-9646-6e53c2212df1.png)
-
-Taki sam wykres można stworzyć dla zależności podkład - cena - port. Można na ich podstawie wnioskować, że uda nam się uzupełnić braki w rodzaju kabiny po połączeniu wszystkich tych składników. Przede wszystkim pogrupujmy ładnie dane:
-```
-df.groupby(['Pclass', 'Embarked', 'Cabin'])['Fare'].mean()
-
-Pclass  Embarked  Cabin
-# 1       C         A         38.357743
-#                   B        145.964018
-#                   C         98.582533
-#                   D         85.586000
-#                   E         92.905840
-#                   U        102.376526
-#         Q         C         90.000000
-#         S         A         40.731763
-#                   B         85.372283
-#                   C        101.630442
-#                   D         49.719906
-#                   E         46.448750
-#                   T         35.500000
-#                   U         53.751986
-# 2       C         D         13.333350
-#                   U         26.961667
-#         Q         E         12.350000
-#                   U         12.350000
-#         S         D         13.000000
-#                   E         11.333333
-#                   F         23.750000
-#                   U         20.421854
-# 3       C         F         22.358300
-#                   U         11.042634
-#         Q         F          7.750000
-#                   U         11.231751
-#         S         E         11.000000
-#                   F          7.650000
-#                   G         13.581250
-#                   U         14.749523
-```
-
-Powyższa lista ładnie obrazuje to, czego szukaliśmy, ale do wypełniania braków potrzebna nam inna struktura:
-klasa , port, cena -> numer kabiny
-Musimy więc przekształcić nasz słownik:
-
-```
-# słownik jak wyżej
-cabins_dict = dict(df.groupby(['Pclass', 'Embarked', 'Cabin'])['Fare'].mean())
-
-
-# nowy słownik gdzie klucz: Klasa, Port, Cena, a wartość: Kabina
-formatted_cabins_dict = dict()
-
-for k,v in cabins_dict.items():
-    new_key = (k[0], k[1], v)
-    new_value = k[2]
-    
-    formatted_cabins_dict[new_key] = new_value
-    
-# usuwamy ze słownika literkę U(nknown), nią nie chcemy uzupełniac braków
-ready_cabins = dict()
-for k,v in formatted_cabins_dict.items():
-    if v != 'U':
-        ready_cabins[k] = v
-```
-
-Uzupełniamy brakujące dane:
-
-```
-# 2 funkcje, które pomogą dopasować Fare do odpowiedniego klucza
-
-def find_closest(alls, ele):
-    
-    smallest = 100000
-    
-    for a in alls:
-        if abs(a - ele) < smallest:
-            smallest = abs(a - ele)
-            found = a
-            
-    return(a)    
-
-def find_fare(cabin, pclass, embarked, fare):
-    
-    if cabin == 'U':
-        all_fares = []
-        for k,v in ready_cabins.items():
-            if k[0] == pclass and k[1] == embarked:
-                all_fares.append(k[2])
-
-        if len(all_fares) > 0:
-            found_fare = find_closest(all_fares, fare)
-            return(ready_cabins[(pclass, embarked, found_fare)])
-    else:
-        return(cabin)
-```
-
-```
-# nowa kolumna na uzupełnione wartości
-df['Cabin_combined'] = df['Cabin'].copy()
-df['Cabin_combined']  = df.apply(lambda x: find_fare(x.Cabin, x.Pclass, x.Embarked, x.Fare), axis=1)
-```
-Po przepuszczeniu kodu pojawiły się 2 braki w kolumnie Cabin_combined
-```
-df['Cabin_combined'].isnull().sum()
-# załatwmy to ręcznie
-df.loc[df['Cabin_combined'].isnull(), 'Cabin_combined'] = 'U'
-```
-
-#### 2.3.3 Brakujący port
-At least! Ostatni (w zbiorze treningowym) brakujący element to informacja o porcie zaokrętowania dla dwóch facetek:
-![image](https://user-images.githubusercontent.com/13216011/150139222-307e058d-dc36-4228-84e9-bb85a634cd8c.png)
-
-To tylko 2 wiersze,sSkorzystajmy więc po prostu z potęgi internetu, wpiszmy w wyszukiwarkę imię i nazwisko pasażerki:
+Po pierwsze, wszystkie kolumny, w których mamy wartości nieliczbowe, musimy zamienić na liczbowe, i mamy na to 2 sposoby. Albo integer encoding, w którym przypiszemy słowom cyfry ( jeśli nasz zbiór zawiera na przykład zwierzęta, kota, psa i myszojelenia, to umawiamy się, ze kot = 1, pies = 2 a myszojeleń = 3). I niby sprawa załatwiona, bo komputer już rozumie, że to 3 różne stworzenia, ale przecież 3 jest większe od 1, więc może wymyślić jakieś nieistniejące związki. Dlatego mamy metodę numer 2, OneHot Encoding (this is one hot name :P), czyi stowrzenie tylu nowych kolumn, ile unikalnych wartości posiadamy, i wpisania 1 w tę jedną, która się zgadza, a 0 w resztę. Czyi w powyższym przypadku tworzymy kolumny kot, pies, myszojeleń, i jeśli coś jest psem, to dostaje 1 w kolumnie pies i 0 wszędzie indziej.
   
-  >Miss Rose Amélie Icard, 38, was born in Vaucluse, France on 31 October 1872, her father Marc Icard lived at Mafs á Murs (?).
-She boarded the Titanic at Southampton as maid to Mrs George Nelson Stone. She travelled on Mrs Stone's ticket (#113572).
-  
-  Problem rozwiązany, dorzucamy 'S' w brakujące miejsca:
-  ```
-  df.loc[df['Embarked'].isnull(), 'Embarked'] = 'S'
-  ```
-  
-### 2.4 ANALIZA!
+```
+# tworzymy nowe kolumny dla tytułów i usuwamy kolumne Title
+titles_dummies = pd.get_dummies(df['Title'], prefix='Title')
+df = pd.concat([df, titles_dummies], axis=1)
+df.drop('Title', axis=1, inplace=True, errors='Ignore')
+
+# tworzymy nowe kolumny dla Klasy i usuwamy kolumne Pclass
+titles_dummies = pd.get_dummies(df['Pclass'], prefix='Pclass')
+df = pd.concat([df, titles_dummies], axis=1)
+df.drop('Pclass', axis=1, inplace=True, errors='Ignore')
+
+# tworzymy nowe kolumny dla etykietek wieku i usuwamy kolumne Age_label
+titles_dummies = pd.get_dummies(df['Age_label'], prefix='Age_label')
+df = pd.concat([df, titles_dummies], axis=1)
+df.drop('Age_label', axis=1, inplace=True, errors='Ignore')
+
+# tworzymy nowe kolumny dla portu zaokrętowania i usuwamy kolumne Embarked
+titles_dummies = pd.get_dummies(df['Embarked'], prefix='Embarked')
+df = pd.concat([df, titles_dummies], axis=1)
+df.drop('Embarked', axis=1, inplace=True, errors='Ignore')
+
+# tworzymy nowe kolumny dla kabiny i usuwamy kolumne Cabin
+titles_dummies = pd.get_dummies(df['Cabin'], prefix='Cabin')
+df = pd.concat([df, titles_dummies], axis=1)
+df.drop('Cabin', axis=1, inplace=True, errors='Ignore')
+
+```
+
+Po drugie, kolumny z 2 tylko wartościami zamieniamy na liczbowe używając wartości binarnych:
+
+```
+#zamieniamy wartości w kolmnie Sex na 0 i 1
+df['Sex'] = df['Sex'].map({'male':1, 'female':0})
+```
+
+Po trzecie usuwamy niepotrzebne już kolumny:
+
+```
+# usuwamy kolumnę Age z brakami, bo stworzyliśmy Age_combined
+df.drop('Age', axis=1, inplace=True, errors='Ignore')
+
+# usuwamy kolumnę Name, już się nie przyda
+df.drop('Name', axis=1, inplace=True, errors='Ignore')
+
+# usuwamy kolumnę PassengerId, nie przyda się
+df.drop('PassengerId', axis=1, inplace=True, errors='Ignore')
+```
+
+Została nam jeszcze kolumna Ticket, do której wcześniej nie zaglądaliśmy. Unikalnych wartości jest tam 929, trochę dużo, rzucmy więc na nie pobieżnie okiem i sprawdźmy, co mówi [encyklopedia](https://www.encyclopedia-titanica.org/cabins.html).
+
+![image](https://user-images.githubusercontent.com/13216011/158078889-b135deb9-3e70-4efa-a86b-009ad517f8c6.png)
+
+Widać, że tickety mają prefixy, spróbujmy wyłuskać tę informację.
+
+Teraz zerknijmy na kolumny, które zawierają informację o towarzyszach podróży: SibSp i Parch, czyli liczba dzieci/rodziców i rodzeństwa/współmałżonków. Możemy na ich dodstawie stworzyć nową kolumnę, która określa wielkość jednej podróżującej ze sobą rodziny.
+
+```
+df['Family_size'] = df['Parch'] + df['SibSp'] + 1
+```
+
+Następnie stwórzmy dodatkowe kolumny, które określają wielkość rodziny
+
+Sigle : pasażer podróżujący samotnie = 1
+Small_family :  2 <= x <= 4 osoby
+Large_family : więcej niż 5 osób
+```
+df['Sigle'] = df['Family_size'].map(lambda s: 1 if s == 1 else 0)
+df['Small_family'] = df['Family_size'].map(lambda s: 1 if 2 <= s <= 4 else 0)
+df['Large_family'] = df['Family_size'].map(lambda s: 1 if 5 <= s else 0)
+```
+
 
 Wow, w końcu, czas na analizę danych! Często wykresy mówią więcej niż obliczenia (przypomnijcie sobie badanie brakujących danych sprzed 10 minut), zwizualizujmy więc nasze dane z uwzględnieniem kolumny, która najbardziej nas interesuje, czyli Survived. Kod użyty do wykonania wykresów jest w notebooku, tutaj wrzucam tylko rezultat.
 
